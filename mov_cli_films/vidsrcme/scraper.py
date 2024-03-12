@@ -81,7 +81,6 @@ class VidSrcMeScraper(Scraper):
         seasons = imdb["pageProps"]["contentData"]["section"]["seasons"]
 
         for season in seasons:
-            print(season)
             if not season["value"].isdigit():
                 continue
 
