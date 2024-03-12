@@ -41,7 +41,7 @@ class VidPlay():
             elif isinstance(data[index], int):
                 decoded[index] = data[index] ^ s[t]
             else:
-                raise UnicodeDecodeError("Unsupported data type in the input")
+                raise RC4DecodeFailure("Unsupported data type in the input")
 
         return decoded
     

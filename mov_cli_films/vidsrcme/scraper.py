@@ -45,6 +45,9 @@ class VidSrcMeScraper(Scraper):
             if added == limit:
                 break
 
+            if "qid" not in result:
+                continue
+
             if result.get("qid") not in ["movie", "tvSeries"]:
                 continue
 
