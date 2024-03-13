@@ -62,7 +62,7 @@ class VidSrcToScraper(Scraper):
                     id = result.id,
                     title = result.l,
                     type = MetadataType.MOVIE if result.qid == "movie" else MetadataType.SERIES,
-                    year = result.y,
+                    year = result.year,
                     #extra_func = extra_metadata(result)
                 )
             )
