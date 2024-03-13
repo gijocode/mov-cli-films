@@ -21,7 +21,7 @@ class IMDbSerial:
     def __init__(self, data):
         self.id: str = data["id"]
         self.l: str = data["l"]
-        self.qid: str = data["qid"]
+        self.qid: Optional[str] = data.get("qid")
         self.rank: int = data["rank"]
         self.s: str = data["s"]
         self.year: Optional[int] = data.get("y")
