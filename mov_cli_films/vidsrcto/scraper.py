@@ -167,8 +167,7 @@ class VidSrcToScraper(Scraper):
                 url,
                 metadata.title,
                 "",
-                episode.episode,
-                episode.season,
+                episode,
                 None
             )
 

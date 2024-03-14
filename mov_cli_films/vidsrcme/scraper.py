@@ -158,7 +158,6 @@ class VidSrcMeScraper(Scraper):
             url,
             metadata.title,
             "https://vidsrc.stream/",
-            episode.episode,
-            episode.season,
+            episode,
             None
         )
