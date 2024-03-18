@@ -55,7 +55,7 @@ class VadapavScraper(Scraper):
                 subtitles = None
             )
 
-        season = episode.season - 1
+        season = int(episode.season) - 1
 
         season_id = self.http_client.get(f"{self.base_url}/api/d/{metadata.id}").json()["data"]["files"][season]["id"]
 
@@ -63,7 +63,7 @@ class VadapavScraper(Scraper):
 
         for epi in episode_ids:
             epi = VadapavSerial(epi)
-            if episode.episode <= 9: 
+            if int(episode.episode) <= 9: 
                 if f"E0{episode.episode}" in epi.name:
                     id = epi.id
             else:    
