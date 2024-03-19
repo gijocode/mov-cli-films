@@ -70,7 +70,7 @@ class VidSrcMeScraper(Scraper):
     def scrape_metadata_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
         _dict = {}
 
-        imdb = self.http_client.get("https://imdb.com/", redirect=True).text
+        imdb = self.http_client.get(f"https://imdb.com/title/{metadata.id}", redirect=True).text
 
         buildId = re.findall(r"\"buildId\":\"(.*?)\"", imdb)[0]
 
