@@ -1,101 +1,41 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Dict, Iterable
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Dict, Any, Literal, Optional
+    from typing import Dict, Any, Literal, Optional, Generator
 
     from mov_cli import Config
     from mov_cli.http_client import HTTPClient
 
 from mov_cli import utils
-from mov_cli.scraper import Scraper
+from mov_cli.scraper import Scraper, MediaNotFound
 from mov_cli import Series, Movie, Metadata, MetadataType
-from mov_cli.errors import MovCliException
 
-import re
 import base64
 from urllib.parse import unquote
 from .ext import VidPlay
+from mov_cli.utils.scraper import TheMovieDB
 
 __all__ = ("VidSrcToScraper", )
 
-class IMDbSerial:
-    def __init__(self, data):
-        self.id: str = data["id"]
-        self.l: str = data["l"]
-        self.qid: Optional[str] = data.get("qid")
-        self.rank: int = data["rank"]
-        self.s: str = data["s"]
-        self.year: Optional[int] = data.get("y")
-        self.image: Optional[Dict[Any]] = data.get("i")
 
 class VidSrcToScraper(Scraper):
     def __init__(self, config: Config, http_client: HTTPClient) -> None:
         self.base_url = "https://vidsrc.to"
-        self.media_imdb = "https://v2.sg.media-imdb.com/suggestion/{}/{}.json"
-        self.season_imdb = "https://www.imdb.com/_next/data/{}/title/{}/episodes.json"
+        self.api_key = str(base64.b64decode("ZDM5MjQ1ZTExMTk0N2ViOTJiOTQ3ZTNhOGFhY2M4OWY="), "utf-8")
         self.sources = "https://vidsrc.to/ajax/embed/episode/{}/sources"
         self.source = "https://vidsrc.to/ajax/embed/source/{}"
+        self.tmdb = TheMovieDB(http_client)
         super().__init__(config, http_client)
 
-    def search(self, query: str, limit: int = 10) -> Iterable[Metadata]:
-        metadata_list = []
-
-        added = 0
-
-        results = self.http_client.get(self.media_imdb.format(query[0], query)).json()["d"][:limit]
-
-        for result in results:
-            if added == limit:
-                break
-
-            if "qid" not in result:
-                continue
-
-            if result["qid"] not in ["movie", "tvSeries"]:
-                continue
-
-            result = IMDbSerial(result)
-
-            metadata_list.append(
-                Metadata(
-                    id = result.id,
-                    title = result.l,
-                    type = MetadataType.MOVIE if result.qid == "movie" else MetadataType.SERIES,
-                    year = result.year,
-                    #extra_func = extra_metadata(result)
-                )
-            )
-
-            added += 1
-
-        return metadata_list
+    def search(self, query: str, limit: int = 10) -> Generator[Metadata, Any, None]:
+        return self.tmdb.search(query, limit)
     
     def scrape_metadata_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
-        _dict = {}
-
-        imdb = self.http_client.get(f"https://imdb.com/title/{metadata.id}", redirect=True).text
-
-        buildId = re.findall(r"\"buildId\":\"(.*?)\"", imdb)[0]
-
-        url = self.season_imdb.format(buildId, metadata.id)
-
-        imdb = self.http_client.get(url).json()
-
-        seasons = imdb["pageProps"]["contentData"]["section"]["seasons"]
-
-        for season in seasons:
-            if not season["value"].isdigit():
-                continue
-
-            ps = self.http_client.get(url + "?season=" + season["value"]).json()
-
-            _dict[int(season["value"])] = len(ps["pageProps"]["contentData"]["section"]["episodes"]["items"])
-        
-        return _dict
+        return self.tmdb.scrape_metadata_episodes(metadata)
     
     def __deobf(self, encoded_url: str) -> str | bool:
-        # This file is based on https://github.com/Ciarands/vidsrc-to-resolver/blob/dffa45e726a4b944cb9af0c9e7630476c93c0213/vidsrc.py#L16
+        # This is based on https://github.com/Ciarands/vidsrc-to-resolver/blob/dffa45e726a4b944cb9af0c9e7630476c93c0213/vidsrc.py#L16
         # Thanks to @Ciarands!
         standardized_input = encoded_url.replace('_', '/').replace('-', '+')
         binary_data = base64.b64decode(standardized_input)
@@ -138,10 +78,12 @@ class VidSrcToScraper(Scraper):
 
         soup = self.soup(vidsrc)
 
-        id = soup.find('a', {'data-id': True}).get("data-id", None)
+        id = soup.find('a', {'data-id': True})
 
         if not id:
-            raise NoDataId(metadata)
+            raise MediaNotFound(metadata.title, self.logger)
+        
+        id = id.get("data-id", None)
     
         sources = self.http_client.get(self.sources.format(id)).json()
 
@@ -152,7 +94,7 @@ class VidSrcToScraper(Scraper):
                 vidplay_id = source["id"]
 
         if not vidplay_id:
-            raise NoSources(metadata)
+            raise MediaNotFound(metadata.title, VidSrcToScraper)
         
         get_source = self.http_client.get(self.source.format(vidplay_id)).json()["result"]["url"]
 
@@ -177,19 +119,4 @@ class VidSrcToScraper(Scraper):
             "",
             metadata.year,
             None
-        )
-
-class NoDataId(MovCliException):
-    """Raised when scraper couldn't find DataId."""
-    def __init__(self, metadata: Metadata) -> None:
-        super().__init__(
-            f"Did not find any DataId while scraping {metadata.title}"
-        )
-
-
-class NoSources(MovCliException):
-    """Raised when scraper couldn't find supported sources."""
-    def __init__(self, metadata: Metadata) -> None:
-        super().__init__(
-            f"Did not find any supported sources while scraping {metadata.title}"
         )
