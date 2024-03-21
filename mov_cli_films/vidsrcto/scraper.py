@@ -22,7 +22,6 @@ __all__ = ("VidSrcToScraper", )
 class VidSrcToScraper(Scraper):
     def __init__(self, config: Config, http_client: HTTPClient) -> None:
         self.base_url = "https://vidsrc.to"
-        self.api_key = str(base64.b64decode("ZDM5MjQ1ZTExMTk0N2ViOTJiOTQ3ZTNhOGFhY2M4OWY="), "utf-8")
         self.sources = "https://vidsrc.to/ajax/embed/episode/{}/sources"
         self.source = "https://vidsrc.to/ajax/embed/source/{}"
         self.tmdb = TheMovieDB(http_client)
