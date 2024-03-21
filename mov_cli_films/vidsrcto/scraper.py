@@ -31,7 +31,7 @@ class VidSrcToScraper(Scraper):
         return self.tmdb.search(query, limit)
     
     def scrape_metadata_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
-        return self.tmdb.scrape_metadata_episodes(metadata)
+        return self.tmdb.scrape_episodes(metadata)
     
     def __deobf(self, encoded_url: str) -> str | bool:
         # This is based on https://github.com/Ciarands/vidsrc-to-resolver/blob/dffa45e726a4b944cb9af0c9e7630476c93c0213/vidsrc.py#L16
