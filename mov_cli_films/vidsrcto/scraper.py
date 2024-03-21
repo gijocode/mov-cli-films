@@ -81,7 +81,7 @@ class VidSrcToScraper(Scraper):
         id = soup.find('a', {'data-id': True})
 
         if not id:
-            raise MediaNotFound(metadata.title, self.logger)
+            raise MediaNotFound(metadata.title, self)
         
         id = id.get("data-id", None)
     
@@ -94,7 +94,7 @@ class VidSrcToScraper(Scraper):
                 vidplay_id = source["id"]
 
         if not vidplay_id:
-            raise MediaNotFound(metadata.title, VidSrcToScraper)
+            raise MediaNotFound(metadata.title, self)
         
         get_source = self.http_client.get(self.source.format(vidplay_id)).json()["result"]["url"]
 
