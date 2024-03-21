@@ -30,7 +30,7 @@ class VidSrcToScraper(Scraper):
     def search(self, query: str, limit: int = 10) -> Generator[Metadata, Any, None]:
         return self.tmdb.search(query, limit)
     
-    def scrape_metadata_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
+    def scrape_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
         return self.tmdb.scrape_episodes(metadata)
     
     def __deobf(self, encoded_url: str) -> str | bool:
