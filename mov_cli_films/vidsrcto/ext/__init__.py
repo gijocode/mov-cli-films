@@ -1,1 +1,1 @@
-from .vidplay import VidPlay
+from .vidplay import *

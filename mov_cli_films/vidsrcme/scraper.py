@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Iterable
 
 if TYPE_CHECKING:
-    from typing import Dict, Any, Literal, Optional
+    from typing import Dict, Literal, Optional
 
     from mov_cli import Config
     from mov_cli.http_client import HTTPClient

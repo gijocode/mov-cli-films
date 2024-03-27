@@ -12,6 +12,10 @@ import base64
 import json
 from mov_cli.errors import MovCliException
 
+__all__ = (
+    "VidPlay",
+)
+
 class VidPlay():
     def __init__(self, http_client: HTTPClient) -> None:
         self.KEY_URL : str = "https://github.com/Ciarands/vidsrc-keys/blob/main/keys.json"
@@ -114,5 +118,5 @@ class RC4DecodeFailure(MovCliException):
     """Raised when failure on decoding RC4 data."""
     def __init__(self) -> None:
         super().__init__(
-            f"Failed to decode RC4 Data."
+            "Failed to decode RC4 Data."
         )
