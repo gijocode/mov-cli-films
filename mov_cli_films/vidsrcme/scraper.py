@@ -87,17 +87,15 @@ class VidSrcMeScraper(Scraper):
 
         if metadata.type == MetadataType.MOVIE:
             return Movie(
-                url,
-                metadata.title,
-                "https://vidsrc.stream/",
-                metadata.year,
-                None
+                url = url,
+                title = metadata.title,
+                referrer = "https://vidsrc.stream/",
+                year = metadata.year
             )
 
         return Series(
-            url,
-            metadata.title,
-            "https://vidsrc.stream/",
-            episode,
-            None
+            url = url,
+            title = metadata.title,
+            referrer = "https://vidsrc.stream/",
+            episode = episode
         )

@@ -81,19 +81,15 @@ class VidSrcToScraper(Scraper):
 
         if metadata.type == MetadataType.SERIES:
             return Series(
-                url,
-                metadata.title,
-                "",
-                episode,
-                None
+                url = url,
+                title = metadata.title,
+                episode = episode
             )
 
         return Movie(
-            url,
-            metadata.title,
-            "",
-            metadata.year,
-            None
+            url = url,
+            title = metadata.title,
+            year = metadata.year
         )
 
     def __get_embed(self, metadata: Metadata, episode: EpisodeSelector) -> Response:
