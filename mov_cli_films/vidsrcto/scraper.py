@@ -28,8 +28,6 @@ class VidSrcToScraper(Scraper):
         self.source = "https://vidsrc.to/ajax/embed/source/{}"
         self.tmdb = TheMovieDB(http_client)
 
-        self.__search_cache: Dict[str, Response] = {}
-
         super().__init__(config, http_client)
 
     def search(self, query: str, limit: int = 20) -> Generator[Metadata, Any, None]:
@@ -40,16 +38,13 @@ class VidSrcToScraper(Scraper):
             if embed_response.status_code == 404: # don't include media that isn't available on the provider.
                 continue
 
-            # caching it so we don't have to request for the embed again when we finally scape.
-            self.__search_cache[search_result.id] = embed_response
             yield search_result
 
     def scrape_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
         return self.tmdb.scrape_episodes(metadata)
 
     def scrape(self, metadata: Metadata, episode: EpisodeSelector) -> Series | Movie:
-        embed_response = self.__search_cache[metadata.id]
-        self.__search_cache.clear()
+        embed_response = self.__get_embed(metadata, episode)
 
         soup = self.soup(embed_response)
 
