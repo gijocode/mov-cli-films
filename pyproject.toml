@@ -37,8 +37,8 @@ dev = [
 ]
 
 [project.urls]
-GitHub = "https://github.com/mov-cli/mov-cli-films"
-BugTracker = "https://github.com/mov-cli/mov-cli-films/issues"
+GitHub = "https://github.com/JDALab/mov-cli-films"
+BugTracker = "https://github.com/JDALab/mov-cli-films/issues"
 
 [tool.setuptools.dynamic]
 version = { attr = "mov_cli_films.__version__" }
