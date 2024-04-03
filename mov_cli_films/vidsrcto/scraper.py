@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 from mov_cli.utils import EpisodeSelector
 from mov_cli.scraper import Scraper, MediaNotFound
 from mov_cli import Series, Movie, Metadata, MetadataType
+import time
 
 import base64
 from urllib.parse import unquote
@@ -27,6 +28,7 @@ class VidSrcToScraper(Scraper):
         self.sources = "https://vidsrc.to/ajax/embed/episode/{}/sources"
         self.source = "https://vidsrc.to/ajax/embed/source/{}"
         self.tmdb = TheMovieDB(http_client)
+        self.referrer = "https://e69975b881.nl/"
 
         super().__init__(config, http_client)
 
@@ -73,18 +75,20 @@ class VidSrcToScraper(Scraper):
         vidplay = VidPlay(self.http_client)
 
         url = vidplay.resolve_source(vidplay_url)[0]
-
+        
         if metadata.type == MetadataType.SERIES:
             return Series(
                 url = url,
                 title = metadata.title,
-                episode = episode
+                episode = episode,
+                referrer = self.referrer
             )
 
         return Movie(
             url = url,
             title = metadata.title,
-            year = metadata.year
+            year = metadata.year,
+            referrer = self.referrer
         )
 
     def __get_embed(self, metadata: Metadata, episode: EpisodeSelector) -> Response:
@@ -103,7 +107,7 @@ class VidSrcToScraper(Scraper):
         standardized_input = encoded_url.replace('_', '/').replace('-', '+')
         binary_data = base64.b64decode(standardized_input)
 
-        key_bytes = bytes("8z5Ag5wgagfsOuhz", 'utf-8')
+        key_bytes = bytes("WXrUARXb1aDLaZjI", 'utf-8')
         s = bytearray(range(256))
         j = 0
 
