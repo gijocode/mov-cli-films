@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 from mov_cli.utils import EpisodeSelector
 from mov_cli.scraper import Scraper, MediaNotFound
 from mov_cli import Series, Movie, Metadata, MetadataType
-import time
 
 import base64
 from urllib.parse import unquote
