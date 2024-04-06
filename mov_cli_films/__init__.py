@@ -6,13 +6,15 @@ if TYPE_CHECKING:
 
 from .vidsrcme import *
 from .vidsrcto import *
+from .vadapav import *
 
 plugin: PluginHookData = {
-    "version": 1, 
+    "version": 1,
     "scrapers": {
-        "DEFAULT": VidSrcToScraper, 
+        "DEFAULT": VidSrcToScraper,
         "vidsrcto": VidSrcToScraper,
-        "vidsrcme": VidSrcMeScraper
+        "vidsrcme": VidSrcMeScraper,
+        "vadapav": VadapavScraper
     }
 }
 
