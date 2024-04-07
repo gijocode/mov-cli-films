@@ -82,7 +82,7 @@ class VadapavScraper(Scraper):
             soup = BeautifulSoup(files,'html.parser')
             resources = [x for x in soup.find_all('a',{"class":"file-entry"}) if x.string[-4:]!='.srt']
             subtitles = [x for x in soup.find_all('a',{'class':'file-entry'}) if x.string[-4:]=='.srt']
-            subtitle_url = {"en":self.base_url+subtitles[0].get('data-href')} if subtitles else None
+            subtitle_url = {"en":self.base_url+(subtitles[0].get('data-href') or subtitles.get('href'))} if subtitles else None
             resource_url = ""
 
             # Always select greatest resolution when there are multiple files
@@ -91,15 +91,15 @@ class VadapavScraper(Scraper):
                 resolution = self.extract_resolution(resource.string)
                 if resolution > max_resolution:
                     max_resolution = resolution
-                    resource_url = resource.get('data-href')
+                    resource_url = resource.get('data-href') or resource.get('href')
 
-            url = self.base_url+resource_url
+            url = self.base_url+resource_url if resource_url else None
 
             return Movie(
                 url,
                 title = metadata.title,
                 referrer = self.base_url,
-                year = metadata.year if metadata.year else "",
+                year = metadata.year,
                 subtitles = subtitle_url
             )
 
@@ -123,7 +123,7 @@ class VadapavScraper(Scraper):
                 break
         for resource in resources:
             if season_str+episode_str in resource.string:
-                url = self.base_url+resource.get('data-href')
+                url = self.base_url+(resource.get('data-href') or resource.get('href'))
                 break
 
         return Series(
