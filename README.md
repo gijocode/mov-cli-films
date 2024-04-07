@@ -7,6 +7,9 @@
 
 </div>
 
+> [!NOTE]
+> Searching for maintainers
+
 ## Installation
 Here's how to install and add the plugin to mov-cli.
 
