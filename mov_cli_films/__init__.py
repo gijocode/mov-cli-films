@@ -10,10 +10,11 @@ from .vidsrcto import *
 plugin: PluginHookData = {
     "version": 1, 
     "scrapers": {
-        "DEFAULT": VidSrcToScraper, 
-        "vidsrcto": VidSrcToScraper,
+        "DEFAULT": VidSrcMeScraper,
         "vidsrcme": VidSrcMeScraper
     }
 }
 
 __version__ = "1.3.3"
+
+# NOTE: I will leave vidsrcto in, if no fix is found we'll remove it ~ Ananas

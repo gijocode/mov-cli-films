@@ -46,6 +46,25 @@ class VidSrcMeScraper(Scraper):
 
         return decoded_video.decode()
 
+    def __get_url(self, prourl: str):
+        url = None
+
+        while url is None:
+            prorcp = self.http_client.get(prourl, headers={"Referer": "https://vidsrc.stream/"})
+
+            prorcp = self.soup(prorcp)
+
+            scripts = prorcp.findAll("script")
+
+            for script in scripts:
+                if "Playerjs" in script.text:
+                    player = script.text
+                    break
+
+            url = self.__extraction(player)
+
+        return url
+
     def scrape(self, metadata: Metadata, episode: Optional[utils.EpisodeSelector] | None = None) -> Series | Movie:
         if episode is None:
             episode = utils.EpisodeSelector()
@@ -72,18 +91,7 @@ class VidSrcMeScraper(Scraper):
 
         prourl = self.http_client.get(srcrcp, headers={"Referer": "https://vidsrc.stream/"}).headers["Location"]
 
-        prorcp = self.http_client.get(prourl, headers={"Referer": "https://vidsrc.stream/"})
-
-        prorcp = self.soup(prorcp)
-
-        scripts = prorcp.findAll("script")
-
-        for script in scripts:
-            if "Playerjs" in script.text:
-                player = script.text
-                break
-
-        url = self.__extraction(player)
+        url = self.__get_url(prourl)
 
         if metadata.type == MetadataType.MOVIE:
             return Movie(
