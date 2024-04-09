@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from mov_cli import Config
     from httpx import Response
     from mov_cli.http_client import HTTPClient
+    from mov_cli.scraper import ScraperOptionsT
 
 import re
 
@@ -22,12 +23,12 @@ import base64
 __all__ = ("VidSrcMeScraper",)
 
 class VidSrcMeScraper(Scraper):
-    def __init__(self, config: Config, http_client: HTTPClient) -> None:
+    def __init__(self, config: Config, http_client: HTTPClient, options: Optional[ScraperOptionsT] = None) -> None:
         self.base_url = "https://vidsrc.net"
         self.tmdb = TheMovieDB(http_client)
 
         self.MAX_TRIES = 10
-        super().__init__(config, http_client)
+        super().__init__(config, http_client, options)
 
     def search(self, query: str, limit: int = 10) -> Iterable[Metadata]:
         for search_result in self.tmdb.search(query, limit):
@@ -85,7 +86,7 @@ class VidSrcMeScraper(Scraper):
 
         return self.http_client.get(url)
 
-    def scrape(self, metadata: Metadata, episode: Optional[EpisodeSelector] | None = None) -> Multi | Single:        
+    def scrape(self, metadata: Metadata, episode: EpisodeSelector) -> Multi | Single:        
         for _ in range(self.MAX_TRIES):
             vidsrc = self.__get_embed(metadata, EpisodeSelector())
 
