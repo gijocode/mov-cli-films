@@ -66,7 +66,7 @@ class VadapavScraper(Scraper):
             episodes_entries = [
                 episode
                 for episode in season_soup.find_all("a", {"class": "file-entry"})
-                if episode.string[-4:] != ".srt"
+                if episode.string[-4:] not in [".srt", ".txt"]
             ]
             result[i + 1] = len(episodes_entries)
         print(result)
@@ -96,7 +96,7 @@ class VadapavScraper(Scraper):
             mov_files = [
                 x
                 for x in movie_soup.find_all("a", {"class": "file-entry"})
-                if x.string[-4:] != ".srt"
+                if x.string[-4:] not in [".srt", ".txt"]
             ]
 
             subtitles = [
