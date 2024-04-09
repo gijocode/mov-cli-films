@@ -5,14 +5,17 @@ if TYPE_CHECKING:
     from typing import Dict, Literal, Optional
 
     from mov_cli import Config
+    from httpx import Response
     from mov_cli.http_client import HTTPClient
 
 import re
 
 from mov_cli import utils
 from mov_cli.scraper import Scraper
-from mov_cli import Series, Movie, Metadata, MetadataType
+from mov_cli import Multi, Single, Metadata, MetadataType
 from mov_cli.utils.scraper import TheMovieDB
+from mov_cli.utils import EpisodeSelector
+
 import base64
 
 
@@ -22,10 +25,18 @@ class VidSrcMeScraper(Scraper):
     def __init__(self, config: Config, http_client: HTTPClient) -> None:
         self.base_url = "https://vidsrc.net"
         self.tmdb = TheMovieDB(http_client)
+
+        self.MAX_TRIES = 10
         super().__init__(config, http_client)
 
     def search(self, query: str, limit: int = 10) -> Iterable[Metadata]:
-        return self.tmdb.search(query, limit)
+        for search_result in self.tmdb.search(query, limit):
+            embed_response = self.__get_embed(search_result, EpisodeSelector())
+
+            if embed_response.status_code == 404: # don't include media that isn't available on the provider.
+                continue
+
+            yield search_result
 
     def scrape_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
         return self.tmdb.scrape_episodes(metadata)
@@ -37,50 +48,59 @@ class VidSrcMeScraper(Scraper):
             result += chr(int(j, 16) ^ ord(index[i // 2 % len(index)]))
         return result
 
-    def __extraction(self, script):
-        file_section = re.findall(r"file:\"#9(.*?)\"", script)[0]
-
-        based64 = re.sub('/@#@\\S+?=?=', '', file_section)
-
-        decoded_video = base64.b64decode(based64)
-
-        return decoded_video.decode()
-
     def __get_url(self, prourl: str):
         url = None
-
-        while url is None:
+        
+        for _ in range(self.MAX_TRIES):
             prorcp = self.http_client.get(prourl, headers={"Referer": "https://vidsrc.stream/"})
 
-            prorcp = self.soup(prorcp)
+            if prorcp.status_code == 503:
+                continue
+            
+            hls_url = re.search(r'file:"([^"]*)"', prorcp.text).group(1)
+            hls_url = re.sub(r'\/\/\S+?=', '', hls_url)[2:]     
+            hls_url = re.sub(r"\/@#@\/[^=\/]+==", "", hls_url)
 
-            scripts = prorcp.findAll("script")
+            hls_url = hls_url.replace('_', '/').replace('-', '+')
 
-            for script in scripts:
-                if "Playerjs" in script.text:
-                    player = script.text
-                    break
+            try:
+                hls_url = bytearray(base64.b64decode(hls_url))
+                hls_url = hls_url.decode('utf-8')
+            except UnicodeDecodeError:
+                hls_url = None
 
-            url = self.__extraction(player)
+            if hls_url is not None:
+                url = hls_url
+                break
 
         return url
 
-    def scrape(self, metadata: Metadata, episode: Optional[utils.EpisodeSelector] | None = None) -> Series | Movie:
-        if episode is None:
-            episode = utils.EpisodeSelector()
+    def __get_embed(self, metadata: Metadata, episode: EpisodeSelector) -> Response:
+        media_type = "tv" if metadata.type == MetadataType.SERIES else "movie"
 
-        type = "movie" if metadata.type == MetadataType.MOVIE else "tv"
-
-        url_const = f"{self.base_url}/embed/{type}/{metadata.id}"
+        url = f"{self.base_url}/embed/{media_type}/{metadata.id}"
 
         if metadata.type == MetadataType.SERIES:
-            url_const += f"/{episode.season}-{episode.episode}" 
+            url += f"/{episode.season}/{episode.episode}"
 
-        vidsrc = self.http_client.get(url_const)
+        return self.http_client.get(url)
+
+    def scrape(self, metadata: Metadata, episode: Optional[EpisodeSelector] | None = None) -> Multi | Single:        
+        for _ in range(self.MAX_TRIES):
+            vidsrc = self.__get_embed(metadata, EpisodeSelector())
+
+            if vidsrc.status_code != 503:
+                break
+
+        print(self.soup(vidsrc).prettify())
 
         iframeurl = "https:" + self.soup(vidsrc).select("iframe#player_iframe")[0]["src"]
 
-        doc = self.http_client.get(iframeurl, headers={"Referer": vidsrc})
+        for _ in range(self.MAX_TRIES):
+            doc = self.http_client.get(iframeurl, headers={"Referer": vidsrc})
+
+            if doc.status_code != 503:
+                break
 
         doc = self.soup(doc)
 
@@ -89,19 +109,23 @@ class VidSrcMeScraper(Scraper):
 
         srcrcp = "https:" + self.__deobfstr(hash, index).replace("vidsrc.stream", "vidsrc.net")
 
-        prourl = self.http_client.get(srcrcp, headers={"Referer": "https://vidsrc.stream/"}).headers["Location"]
+        for _ in range(self.MAX_TRIES):
+            prourl = self.http_client.get(srcrcp, headers={"Referer": "https://vidsrc.stream/"}).headers.get("Location", None)
+
+            if prourl is not None:
+                break
 
         url = self.__get_url(prourl)
 
         if metadata.type == MetadataType.MOVIE:
-            return Movie(
+            return Single(
                 url = url,
                 title = metadata.title,
                 referrer = "https://vidsrc.stream/",
                 year = metadata.year
             )
 
-        return Series(
+        return Multi(
             url = url,
             title = metadata.title,
             referrer = "https://vidsrc.stream/",
