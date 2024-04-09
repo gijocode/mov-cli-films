@@ -12,7 +12,6 @@ import re
 from mov_cli import utils
 from mov_cli.scraper import Scraper
 from mov_cli import Series, Movie, Metadata, MetadataType
-from bs4 import BeautifulSoup
 
 __all__ = ("VadapavScraper",)
 
@@ -24,8 +23,8 @@ class VadapavScraper(Scraper):
 
     def search(self, query: str, limit: int = 10) -> Iterable[Metadata]:
         search_url = f"{self.base_url}/s/{query}"
-        search_doc = self.http_client.get(search_url)
-        search_results_soup = BeautifulSoup(search_doc, "html.parser")
+        search_html = self.http_client.get(search_url)
+        search_results_soup = self.soup(search_html)
         # In this site, all movies are appended with its release year.
         # So it can be used as an inexpensive way to determine the type of media
         movie_pattern = r".*\(\d{4}\)$"
@@ -54,7 +53,7 @@ class VadapavScraper(Scraper):
 
     def scrape_episodes(self, metadata: Metadata):
         seasons_html = self.http_client.get(f"{self.base_url}/{metadata.id}")
-        seasons_soup = BeautifulSoup(seasons_html, "html.parser")
+        seasons_soup = self.soup(seasons_html)
         season_dirs = [
             dir
             for dir in seasons_soup.find_all("a", {"class": "directory-entry"})
@@ -63,7 +62,7 @@ class VadapavScraper(Scraper):
         result = {}
         for i, season in enumerate(season_dirs):
             season_html = self.http_client.get(self.base_url + season.get("href"))
-            season_soup = BeautifulSoup(season_html, "html.parser")
+            season_soup = self.soup(season_html)
             episodes_entries = [
                 episode
                 for episode in season_soup.find_all("a", {"class": "file-entry"})
@@ -93,7 +92,7 @@ class VadapavScraper(Scraper):
 
         if metadata.type == MetadataType.MOVIE:
             mov_dir_html = self.http_client.get(f"{self.base_url}/{metadata.id}")
-            movie_soup = BeautifulSoup(mov_dir_html, "html.parser")
+            movie_soup = self.soup(mov_dir_html)
             mov_files = [
                 x
                 for x in movie_soup.find_all("a", {"class": "file-entry"})
@@ -145,7 +144,7 @@ class VadapavScraper(Scraper):
         )
 
         series_dir_html = self.http_client.get(f"{self.base_url}/{metadata.id}")
-        series_soup = BeautifulSoup(series_dir_html, "html.parser")
+        series_soup = self.soup(series_dir_html)
         season_directories = series_soup.find_all("a", {"class": "directory-entry"})[1:]
 
         for season_dir in season_directories:
@@ -154,7 +153,7 @@ class VadapavScraper(Scraper):
                 season_dir_html = self.http_client.get(
                     self.base_url + season_dir.get("href")
                 )
-                season_soup = BeautifulSoup(season_dir_html, "html.parser")
+                season_soup = self.soup(season_dir_html)
                 episode_files = [
                     file_entry
                     for file_entry in season_soup.find_all("a", {"class": "file-entry"})
