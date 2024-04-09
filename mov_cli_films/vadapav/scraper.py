@@ -69,7 +69,6 @@ class VadapavScraper(Scraper):
                 if episode.string[-4:] not in [".srt", ".txt"]
             ]
             result[i + 1] = len(episodes_entries)
-        print(result)
         return result
 
     def extract_resolution(self, filename):
@@ -86,7 +85,6 @@ class VadapavScraper(Scraper):
     def scrape(
         self, metadata: Metadata, episode: Optional[utils.EpisodeSelector] = None
     ) -> Series | Movie:
-        print("hi")
         if episode is None:
             episode = utils.EpisodeSelector()
 
@@ -148,7 +146,6 @@ class VadapavScraper(Scraper):
         season_directories = series_soup.find_all("a", {"class": "directory-entry"})[1:]
 
         for season_dir in season_directories:
-            print(season_dir)
             if season_dir.string == season_dir_name:
                 season_dir_html = self.http_client.get(
                     self.base_url + season_dir.get("href")
@@ -162,7 +159,6 @@ class VadapavScraper(Scraper):
                 break
 
         for episode_file in episode_files:
-            print(episode_file)
             if season_str + episode_str in episode_file.string:
                 episode_url = self.base_url + (
                     episode_file.get("data-href") or episode_file.get("href")
