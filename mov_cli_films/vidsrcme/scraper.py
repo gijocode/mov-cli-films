@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 import re
 
-from mov_cli import utils
 from mov_cli.scraper import Scraper
 from mov_cli import Multi, Single, Metadata, MetadataType
 from mov_cli.utils.scraper import TheMovieDB
