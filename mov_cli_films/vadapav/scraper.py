@@ -28,10 +28,8 @@ class VadapavScraper(Scraper):
         # In this site, all movies are appended with its release year.
         # So it can be used as an inexpensive way to determine the type of media
         movie_pattern = r".*\(\d{4}\)$"
-        
-        for search_result_item in search_results_soup.find_all(
-            "a", {"class": "directory-entry"}
-        ):
+
+        for search_result_item in search_results_soup.find_all("a", {"class": "directory-entry"}):
             item_id = search_result_item.get("href").strip("/")
             if re.match(movie_pattern, search_result_item.string):
                 item_type = MetadataType.MOVIE
