@@ -2,24 +2,24 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import List, Optional, Dict
+    from typing import Iterable, Optional
 
     from mov_cli import Config
     from mov_cli.http_client import HTTPClient
+    from mov_cli.scraper import ScraperOptionsT
 
 import re
 
 from mov_cli import utils
 from mov_cli.scraper import Scraper
-from mov_cli import Series, Movie, Metadata, MetadataType
+from mov_cli import Multi, Single, Metadata, MetadataType
 
 __all__ = ("VadapavScraper",)
 
-
 class VadapavScraper(Scraper):
-    def __init__(self, config: Config, http_client: HTTPClient) -> None:
+    def __init__(self, config: Config, http_client: HTTPClient, options: Optional[ScraperOptionsT] = None) -> None:
         self.base_url = "https://vadapav.mov"
-        super().__init__(config, http_client)
+        super().__init__(config, http_client, options)
 
     def search(self, query: str, limit: int = 10) -> Iterable[Metadata]:
         search_url = f"{self.base_url}/s/{query}"
@@ -28,10 +28,8 @@ class VadapavScraper(Scraper):
         # In this site, all movies are appended with its release year.
         # So it can be used as an inexpensive way to determine the type of media
         movie_pattern = r".*\(\d{4}\)$"
-        search_results = []
-        for search_result_item in search_results_soup.find_all(
-            "a", {"class": "directory-entry"}
-        ):
+
+        for search_result_item in search_results_soup.find_all("a", {"class": "directory-entry"}):
             item_id = search_result_item.get("href").strip("/")
             if re.match(movie_pattern, search_result_item.string):
                 item_type = MetadataType.MOVIE
@@ -41,15 +39,13 @@ class VadapavScraper(Scraper):
                 item_type = MetadataType.SERIES
                 item_year = "Series"  # better than an ugly empty ()
                 item_name = search_result_item.string
-            search_results.append(
-                Metadata(
-                    id=item_id,
-                    title=item_name,
-                    type=item_type,
-                    year=item_year,
-                )
+
+            yield Metadata(
+                id=item_id,
+                title=item_name,
+                type=item_type,
+                year=item_year,
             )
-        return search_results
 
     def scrape_episodes(self, metadata: Metadata):
         seasons_html = self.http_client.get(f"{self.base_url}/{metadata.id}")
@@ -82,11 +78,7 @@ class VadapavScraper(Scraper):
         else:
             return 0  # Default to 0 if resolution is not found
 
-    def scrape(
-        self, metadata: Metadata, episode: Optional[utils.EpisodeSelector] = None
-    ) -> Series | Movie:
-        if episode is None:
-            episode = utils.EpisodeSelector()
+    def scrape(self, metadata: Metadata, episode: utils.EpisodeSelector) -> Multi | Single:
 
         if metadata.type == MetadataType.MOVIE:
             mov_dir_html = self.http_client.get(f"{self.base_url}/{metadata.id}")
@@ -122,7 +114,7 @@ class VadapavScraper(Scraper):
 
             series_url = self.base_url + movie_url
 
-            return Movie(
+            return Single(
                 series_url,
                 title=metadata.title,
                 referrer=self.base_url,
@@ -165,7 +157,7 @@ class VadapavScraper(Scraper):
                 )
                 break
 
-        return Series(
+        return Multi(
             episode_url,
             title=metadata.title,
             referrer=self.base_url,

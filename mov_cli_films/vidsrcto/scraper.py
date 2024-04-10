@@ -2,16 +2,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from typing import Dict, Any, Literal, Generator
+    from typing import Dict, Any, Literal, Generator, Optional
 
     from httpx import Response
 
     from mov_cli import Config
     from mov_cli.http_client import HTTPClient
+    from mov_cli.scraper import ScraperOptionsT
 
 from mov_cli.utils import EpisodeSelector
 from mov_cli.scraper import Scraper, MediaNotFound
-from mov_cli import Series, Movie, Metadata, MetadataType
+from mov_cli import Multi, Single, Metadata, MetadataType
 
 import base64
 from urllib.parse import unquote
@@ -22,14 +23,14 @@ __all__ = ("VidSrcToScraper", )
 
 
 class VidSrcToScraper(Scraper):
-    def __init__(self, config: Config, http_client: HTTPClient) -> None:
+    def __init__(self, config: Config, http_client: HTTPClient, options: Optional[ScraperOptionsT] = None) -> None:
         self.base_url = "https://vidsrc.to"
         self.sources = "https://vidsrc.to/ajax/embed/episode/{}/sources"
         self.source = "https://vidsrc.to/ajax/embed/source/{}"
         self.tmdb = TheMovieDB(http_client)
         self.referrer = "https://e69975b881.nl/"
 
-        super().__init__(config, http_client)
+        super().__init__(config, http_client, options)
 
     def search(self, query: str, limit: int = 20) -> Generator[Metadata, Any, None]:
 
@@ -44,7 +45,7 @@ class VidSrcToScraper(Scraper):
     def scrape_episodes(self, metadata: Metadata) -> Dict[int, int] | Dict[None, Literal[1]]:
         return self.tmdb.scrape_episodes(metadata)
 
-    def scrape(self, metadata: Metadata, episode: EpisodeSelector) -> Series | Movie:
+    def scrape(self, metadata: Metadata, episode: EpisodeSelector) -> Multi | Single:
         embed_response = self.__get_embed(metadata, episode)
 
         soup = self.soup(embed_response)
@@ -76,14 +77,14 @@ class VidSrcToScraper(Scraper):
         url = vidplay.resolve_source(vidplay_url)[0]
         
         if metadata.type == MetadataType.SERIES:
-            return Series(
+            return Multi(
                 url = url,
                 title = metadata.title,
                 episode = episode,
                 referrer = self.referrer
             )
 
-        return Movie(
+        return Single(
             url = url,
             title = metadata.title,
             year = metadata.year,
