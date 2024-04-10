@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from typing import Iterable, Optional
 
+    from bs4 import ResultSet, Tag
     from mov_cli import Config
     from mov_cli.http_client import HTTPClient
     from mov_cli.scraper import ScraperOptionsT
@@ -21,27 +22,51 @@ class VadapavScraper(Scraper):
         self.base_url = "https://vadapav.mov"
         super().__init__(config, http_client, options)
 
-    def search(self, query: str, limit: int = 10) -> Iterable[Metadata]:
+    def search(self, query: str, limit: int = 15) -> Iterable[Metadata]:
         search_url = f"{self.base_url}/s/{query}"
         search_html = self.http_client.get(search_url)
         search_results_soup = self.soup(search_html)
         # In this site, all movies are appended with its release year.
         # So it can be used as an inexpensive way to determine the type of media
-        movie_pattern = r".*\(\d{4}\)$"
+        # movie_pattern = r".*\(\d{4}\)$"
+
+        index = 0
 
         for search_result_item in search_results_soup.find_all("a", {"class": "directory-entry"}):
-            item_id = search_result_item.get("href").strip("/")
-            if re.match(movie_pattern, search_result_item.string):
-                item_type = MetadataType.MOVIE
-                item_year = search_result_item.string[-5:-1]
-                item_name = search_result_item.string[:-6]
-            else:
-                item_type = MetadataType.SERIES
-                item_year = "Series"  # better than an ugly empty ()
-                item_name = search_result_item.string
+            if index > limit:
+                break
+
+            item_url = search_result_item.get("href")
+
+            r = self.http_client.get(self.base_url + item_url)
+            item_page = self.soup(r.text)
+
+            item_directory_path: ResultSet[Tag] = item_page.find("div", {"class": "directory"}).find("div").find_all("span")
+
+            item_type = None
+            item_name = None
+            item_year = None
+
+            for dir_path in item_directory_path:
+
+                if dir_path.text.startswith(("Movies",)):
+                    item_type = MetadataType.SINGLE
+                    item_year = search_result_item.string[-5:-1]
+                    item_name = search_result_item.string[:-6]
+                    break
+
+                elif dir_path.text.startswith(("TV", "TV Shows")):
+                    item_type = MetadataType.MULTI
+                    item_name = search_result_item.string
+                    break
+
+            if item_type is None:
+                continue
+
+            index =+ 1
 
             yield Metadata(
-                id=item_id,
+                id=item_url.strip("/"),
                 title=item_name,
                 type=item_type,
                 year=item_year,
