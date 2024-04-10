@@ -13,13 +13,12 @@ plugin: PluginHookData = {
 
     "package_name": "mov-cli-films", # Required for the plugin update checker.
     "scrapers": {
-        "DEFAULT": VidSrcMeScraper,
+        "DEFAULT": VadapavScraper,
         "vidsrcme": VidSrcMeScraper,
-        "vadapav": VadapavScraper
-    }
+        "vadapav": VadapavScraper,
+        "vidsrcto": VidSrcToScraper
+
+    } # NOTE: WE ARE IN NEED OF GOOD AND STABLE PROVIDERS 😭
 }
 
-__version__ = "1.3.6"
-
-# NOTE: I will leave vidsrcto in, if no fix is found we'll remove it ~ Ananas
-
+__version__ = "1.3.7"
