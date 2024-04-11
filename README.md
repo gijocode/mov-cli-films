@@ -7,8 +7,8 @@
 
 </div>
 
-> [!NOTE]
-> Searching for maintainers
+> [!WARNING]
+> We are on the lookout for maintainers and if we don't find any soon this project may become unmaintained! Please consider or nominate a friend. Thank you.
 
 ## Installation
 Here's how to install and add the plugin to mov-cli.
