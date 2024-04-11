@@ -176,7 +176,7 @@ class VadapavScraper(Scraper):
                 break
 
         for episode_file in episode_files:
-            if season_str + episode_str in episode_file.string:
+            if season_str + episode_str in episode_file.string.upper():
                 episode_url = self.base_url + (
                     episode_file.get("data-href") or episode_file.get("href")
                 )
