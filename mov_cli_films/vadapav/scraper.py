@@ -122,7 +122,7 @@ class VadapavScraper(Scraper):
             subtitle_url = (
                 {
                     "en": self.base_url
-                    + (subtitles[0].get("data-href") or subtitles.get("href"))
+                    + (subtitles[0].get("data-href") or subtitles[0].get("href"))
                 }
                 if subtitles
                 else None
